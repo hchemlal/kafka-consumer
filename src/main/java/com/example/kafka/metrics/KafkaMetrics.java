@@ -4,8 +4,8 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.cloudwatch2.CloudWatchConfig;
-import io.micrometer.cloudwatch2.CloudWatchMeterRegistry;
+//import io.micrometer.cloudwatch2.CloudWatchConfig;
+//import io.micrometer.cloudwatch2.CloudWatchMeterRegistry;
 import lombok.Getter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -87,35 +87,35 @@ public class KafkaMetrics {
     @Value("${aws.region:us-east-1}")
     private String awsRegion;
 
-    /**
-     * Creates CloudWatch meter registry for AWS integration.
-     */
-    @Bean
-    @Profile("prod")
-    public CloudWatchMeterRegistry cloudWatchMeterRegistry() {
-        CloudWatchConfig config = new CloudWatchConfig() {
-            @Override
-            public String get(String key) {
-                return null;
-            }
-
-            @Override
-            public String namespace() {
-                return applicationName;
-            }
-
-            @Override
-            public Duration step() {
-                return Duration.ofMinutes(1);
-            }
-        };
-
-        CloudWatchAsyncClient cloudWatchAsyncClient = CloudWatchAsyncClient.builder()
-            .region(Region.of(awsRegion))
-            .build();
-
-        return new CloudWatchMeterRegistry(config, Clock.SYSTEM, cloudWatchAsyncClient);
-    }
+//    /**
+//     * Creates CloudWatch meter registry for AWS integration.
+//     */
+//    @Bean
+//    @Profile("prod")
+//    public CloudWatchMeterRegistry cloudWatchMeterRegistry() {
+//        CloudWatchConfig config = new CloudWatchConfig() {
+//            @Override
+//            public String get(String key) {
+//                return null;
+//            }
+//
+//            @Override
+//            public String namespace() {
+//                return applicationName;
+//            }
+//
+//            @Override
+//            public Duration step() {
+//                return Duration.ofMinutes(1);
+//            }
+//        };
+//
+//        CloudWatchAsyncClient cloudWatchAsyncClient = CloudWatchAsyncClient.builder()
+//            .region(Region.of(awsRegion))
+//            .build();
+//
+//        return new CloudWatchMeterRegistry(config, Clock.SYSTEM, cloudWatchAsyncClient);
+//    }
 
     private final MeterRegistry registry;
 
@@ -140,32 +140,32 @@ public class KafkaMetrics {
         this.processedMessagesCounter = Counter.builder("kafka.consumer.messages.processed")
             .description("Number of successfully processed messages")
             .tag("type", "success")
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
+            .tag("application", "kafka-consumer") //applicationName)
+            .tag("region", "us-east-1") //awsRegion)
             .register(registry);
 
         // Tracks failed message processing attempts
         this.failedMessagesCounter = Counter.builder("kafka.consumer.messages.failed")
             .description("Number of failed messages")
             .tag("type", "failure")
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
+            .tag("application", "kafka-consumer") //applicationName)applicationName)
+            .tag("region", "us-east-1") //awsRegion)
             .register(registry);
 
         // Tracks messages sent to Dead Letter Topic
         this.dltMessagesCounter = Counter.builder("kafka.consumer.messages.dlt")
             .description("Number of messages sent to DLT")
             .tag("type", "dlt")
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
+            .tag("application", "kafka-consumer") //applicationName)applicationName)
+            .tag("region", "us-east-1") //awsRegion)
             .register(registry);
 
         // Tracks API-specific failures
         this.apiFailuresCounter = Counter.builder("kafka.consumer.api.failures")
             .description("Number of API call failures")
             .tag("type", "api_failure")
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
+            .tag("application", "kafka-consumer") //applicationName)applicationName)
+            .tag("region", "us-east-1") //awsRegion)
             .register(registry);
 
         // === Timer Metrics ===
@@ -175,8 +175,8 @@ public class KafkaMetrics {
         this.batchProcessingTimer = Timer.builder("kafka.consumer.batch.processing")
             .description("Time taken to process message batches")
             .tag("operation", "batch_processing")
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
+            .tag("application", "kafka-consumer") //applicationName)applicationName)
+            .tag("region", "us-east-1") //awsRegion)
             .publishPercentiles(0.5, 0.95, 0.99) // Tracks p50, p95, p99
             .register(registry);
 
@@ -184,8 +184,8 @@ public class KafkaMetrics {
         this.messageProcessingTimer = Timer.builder("kafka.consumer.message.processing")
             .description("Time taken to process individual messages")
             .tag("operation", "message_processing")
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
+            .tag("application", "kafka-consumer") //applicationName)applicationName)
+            .tag("region", "us-east-1") //awsRegion)
             .publishPercentiles(0.5, 0.95, 0.99)
             .register(registry);
 
@@ -193,8 +193,8 @@ public class KafkaMetrics {
         this.apiCallTimer = Timer.builder("kafka.consumer.api.call")
             .description("Time taken for API calls")
             .tag("operation", "api_call")
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
+            .tag("application", "kafka-consumer") //applicationName)applicationName)
+            .tag("region", "us-east-1") //awsRegion)
             .publishPercentiles(0.5, 0.95, 0.99)
             .register(registry);
 
@@ -202,8 +202,8 @@ public class KafkaMetrics {
         this.dltProcessingTimer = Timer.builder("kafka.consumer.dlt.processing")
             .description("Time taken to process DLT messages")
             .tag("operation", "dlt_processing")
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
+            .tag("application", "kafka-consumer") //applicationName)applicationName)
+            .tag("region", "us-east-1") //awsRegion)
             .publishPercentiles(0.5, 0.95, 0.99)
             .register(registry);
 
@@ -223,7 +223,7 @@ public class KafkaMetrics {
                      () -> {
                          Timer apiTimer = registry.find("api.response.time").timer();
                          long total = apiTimer.count();
-                         long failures = registry.find("kafka.consumer.api.failures")
+                         double failures = registry.find("kafka.consumer.api.failures")
                                                .counter()
                                                .count();
                          return total == 0 ? 1.0 : (total - failures) / (double) total;
@@ -231,22 +231,22 @@ public class KafkaMetrics {
             .description("API call success rate")
             .register(registry);
 
-        // Add AWS-specific gauges
-        Gauge.builder("kafka.consumer.memory.used",
-            Runtime.getRuntime(),
-            this::getUsedMemoryMB)
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
-            .description("JVM memory used in MB")
-            .register(registry);
-
-        Gauge.builder("kafka.consumer.memory.max",
-            Runtime.getRuntime(),
-            this::getMaxMemoryMB)
-            .tag("application", applicationName)
-            .tag("region", awsRegion)
-            .description("JVM max memory in MB")
-            .register(registry);
+//        // Add AWS-specific gauges
+//        Gauge.builder("kafka.consumer.memory.used",
+//            Runtime.getRuntime(),
+//            this::getUsedMemoryMB)
+//            .tag("application", applicationName)
+//            .tag("region", awsRegion)
+//            .description("JVM memory used in MB")
+//            .register(registry);
+//
+//        Gauge.builder("kafka.consumer.memory.max",
+//            Runtime.getRuntime(),
+//            this::getMaxMemoryMB)
+//            .tag("application", applicationName)
+//            .tag("region", awsRegion)
+//            .description("JVM max memory in MB")
+//            .register(registry);
     }
 
     private double getUsedMemoryMB() {

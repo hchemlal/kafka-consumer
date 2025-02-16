@@ -11,7 +11,7 @@ COPY target/*.jar app.jar
 
 # Copy config files
 COPY src/main/resources/application.properties /app/config/
-COPY src/main/resources/application-prod.properties /app/config/
+# COPY src/main/resources/application-prod.properties /app/config/
 
 # Set permissions
 RUN chown -R appuser:appuser /app

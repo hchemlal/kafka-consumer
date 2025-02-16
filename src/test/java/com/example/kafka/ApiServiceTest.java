@@ -25,20 +25,20 @@ public class ApiServiceTest {
     @Test
     public void testPostMessage_Success() {
         String message = "Test Message";
-        when(externalApiClient.sendMessage(message)).thenReturn(true);
+        when(externalApiClient.sendRequest(message)).thenReturn(message);
 
         boolean result = apiService.postMessage(message);
         assertTrue(result);
-        verify(externalApiClient, times(1)).sendMessage(message);
+        verify(externalApiClient, times(1)).sendRequest(message);
     }
 
     @Test
     public void testPostMessage_Failure() {
         String message = "Test Message";
-        when(externalApiClient.sendMessage(message)).thenReturn(false);
+        when(externalApiClient.sendRequest(message)).thenReturn(message);
 
         boolean result = apiService.postMessage(message);
         assertFalse(result);
-        verify(externalApiClient, times(1)).sendMessage(message);
+        verify(externalApiClient, times(1)).sendRequest(message);
     }
 }

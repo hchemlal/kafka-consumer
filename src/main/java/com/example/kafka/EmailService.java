@@ -1,17 +1,17 @@
 package com.example.kafka;
 
+
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
-import lombok.extern.slf4j.Slf4j;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMessage;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -25,7 +25,7 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final Configuration freemarkerConfig;
     private static final ZoneId NY_ZONE = ZoneId.of("America/New_York");
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER = 
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
     
     @Value("${notification.email.from}")

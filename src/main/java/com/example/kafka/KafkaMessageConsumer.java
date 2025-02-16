@@ -3,10 +3,26 @@ package com.example.kafka;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CachePut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
+import org.springframework.util.CollectionUtils;
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+
+import java.time.format.DateTimeParseException;
 
 /**
  * Main Kafka consumer component that processes incoming messages.
@@ -140,7 +156,7 @@ public class KafkaMessageConsumer {
                 if (e instanceof ApiException) {
                     emailService.sendApiFailureAlert(e.getMessage(), record, e);
                 }
-                
+
                 // Acknowledge the failed record and throw to trigger DLT
                 acknowledgment.acknowledge();
                 throw e; // Spring Kafka will handle sending to DLT
@@ -176,7 +192,8 @@ public class KafkaMessageConsumer {
      */
     @DltHandler
     public void handleDlt(ConsumerRecord<String, ActionEvent> record, 
-                         @Header(KafkaHeaders.ORIGINAL_EXCEPTION) Exception e,
+                         //@Header(KafkaHeaders.ORIGINAL_EXCEPTION) Exception e,
+                          @Header(KafkaHeaders.DLT_EXCEPTION_STACKTRACE) Exception e,
                          Acknowledgment acknowledgment) {
         log.error("Processing failed for record in topic {} with NY timestamp: {}. Error: {}", 
                  record.topic(), formatTimestamp(record.value().getTimestamp()), e.getMessage());
@@ -208,9 +225,14 @@ public class KafkaMessageConsumer {
     }
 
     private String formatTimestamp(String timestamp) {
-        return ZonedDateTime.parse(timestamp)
-                          .withZoneSameInstant(NY_ZONE)
-                          .format(TIMESTAMP_FORMATTER);
+        try {
+            return ZonedDateTime.parse(timestamp)
+                              .withZoneSameInstant(NY_ZONE)
+                              .format(TIMESTAMP_FORMATTER);
+        } catch (DateTimeParseException e) {
+            log.error("Error parsing timestamp: {}", timestamp);
+            return timestamp;
+        }
     }
 
     /**
@@ -235,7 +257,7 @@ public class KafkaMessageConsumer {
         ZonedDateTime messageTime = ZonedDateTime.parse(record.value().getTimestamp())
                                                .withZoneSameInstant(NY_ZONE);
         ZonedDateTime now = ZonedDateTime.now(NY_ZONE);
-        
+
         long ageSeconds = ChronoUnit.SECONDS.between(messageTime, now);
         if (ageSeconds > MAX_MESSAGE_AGE_SECONDS) {
             throw new ApiException(

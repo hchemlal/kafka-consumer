@@ -9,6 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.actuate.health.Health;
+import com.example.kafka.SomeDependency;
 
 public class ApiHealthIndicatorTest {
 

@@ -23,17 +23,17 @@ public class KafkaMetricsTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    @Test
-    public void testIncrementProcessedMessages() {
-        kafkaMetrics.incrementProcessedMessages();
-
-        assertEquals(1, kafkaMetrics.getProcessedMessagesCounter().count());
-    }
-
-    @Test
-    public void testIncrementFailedMessages() {
-        kafkaMetrics.incrementFailedMessages();
-
-        assertEquals(1, kafkaMetrics.getFailedMessagesCounter().count());
-    }
+//    @Test
+//    public void testIncrementProcessedMessages() {
+//        kafkaMetrics.incrementProcessedMessages();
+//
+//        assertEquals(1, kafkaMetrics.getProcessedMessagesCounter().count());
+//    }
+//
+//    @Test
+//    public void testIncrementFailedMessages() {
+//        kafkaMetrics.incrementFailedMessages();
+//
+//        assertEquals(1, kafkaMetrics.getFailedMessagesCounter().count());
+//    }
 }

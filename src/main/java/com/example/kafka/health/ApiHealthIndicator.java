@@ -146,8 +146,8 @@ public class ApiHealthIndicator implements HealthIndicator {
         return Health.up()
             .withDetail("consecutiveFailures", failures)
             .withDetail("lastSuccessTime", Duration.ofMillis(timeSinceLastSuccess).toString())
-            .withDetail("averageResponseTime", apiResponseTimer.mean())
-            .withDetail("p95ResponseTime", apiResponseTimer.percentile(0.95))
+            //.withDetail("averageResponseTime", apiResponseTimer.mean())
+            //.withDetail("p95ResponseTime", apiResponseTimer.percentile(0.95))
             .build();
     }
     
