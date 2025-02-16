@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  kafka-consumer:
+    build: .
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_CONSUMER_GROUP=my-group
+      - KAFKA_CONSUMER_CONCURRENCY=3
+      - KAFKA_MAX_POLL_RECORDS=500
+      - KAFKA_FETCH_MIN_BYTES=1048576
+      - KAFKA_FETCH_MAX_WAIT=500
+      - KAFKA_SECURITY_ENABLED=false
+      - AWS_REGION=us-east-1
+      - CLOUDWATCH_ENABLED=false
+    volumes:
+      - ./config:/app/config
+      - ./secrets:/secrets
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - kafka
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1

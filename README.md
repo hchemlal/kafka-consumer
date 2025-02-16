@@ -33,6 +33,71 @@ notification.email.from=your-alerts@domain.com
 notification.email.to=your-admin@domain.com
 ```
 
+## Environment Variables
+
+### Required Variables
+- `KAFKA_BROKERS` - Kafka broker addresses (e.g., `broker1:9092,broker2:9092`)
+- `KAFKA_CONSUMER_GROUP` - Consumer group ID (e.g., `my-group`)
+
+### Optional Variables with Defaults
+
+#### Kafka Settings
+- `KAFKA_CONSUMER_CONCURRENCY` (default: 1) - Number of concurrent consumers
+- `KAFKA_MAX_POLL_RECORDS` (default: 500) - Maximum records per poll
+- `KAFKA_FETCH_MIN_BYTES` (default: 1048576) - Minimum bytes to fetch
+- `KAFKA_FETCH_MAX_WAIT` (default: 500) - Maximum wait time for fetch
+
+#### Security Settings
+- `KAFKA_SECURITY_ENABLED` (default: false) - Enable SSL/TLS security
+- `KAFKA_SECURITY_PROTOCOL` (default: PLAINTEXT) - Security protocol (PLAINTEXT/SSL)
+- `KAFKA_KEYSTORE_LOCATION` - Path to SSL keystore
+- `KAFKA_TRUSTSTORE_LOCATION` - Path to SSL truststore
+- `KAFKA_KEYSTORE_PASSWORD` - Keystore password
+- `KAFKA_TRUSTSTORE_PASSWORD` - Truststore password
+
+#### AWS Settings
+- `AWS_REGION` (default: us-east-1) - AWS region
+- `CLOUDWATCH_ENABLED` (default: false) - Enable CloudWatch metrics
+- `CLOUDWATCH_NAMESPACE` (default: KafkaConsumer) - CloudWatch namespace
+- `CLOUDWATCH_BATCH_SIZE` (default: 20) - Metrics batch size
+
+## Deployment Options
+
+### Local Development
+```bash
+# Set environment variables in .env file or export directly
+export KAFKA_BROKERS=localhost:9092
+export KAFKA_CONSUMER_GROUP=my-group
+```
+
+### Docker Compose
+```bash
+# All variables are set in docker-compose.yml
+docker-compose up
+```
+
+### AWS EC2
+```bash
+# Set environment variables in EC2 User Data or through AWS Systems Manager
+aws ssm put-parameter \
+    --name "/kafka-consumer/prod/KAFKA_BROKERS" \
+    --value "broker1:9092,broker2:9092" \
+    --type "SecureString"
+```
+
+### Container Settings
+```bash
+# Run with environment variables
+docker run -d \
+    -e KAFKA_BROKERS=broker1:9092,broker2:9092 \
+    -e KAFKA_CONSUMER_GROUP=my-group \
+    -e KAFKA_SECURITY_ENABLED=true \
+    -v /secrets:/secrets \
+    -p 8080:8080 \
+    -p 8081:8081 \
+    kafka-consumer:latest
+```
+
 ## Building and Running
 
 1. Build the project:
