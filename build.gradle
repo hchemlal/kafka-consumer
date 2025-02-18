@@ -15,7 +15,7 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'org.springframework.kafka:spring-kafka:3.3.2'
     implementation 'io.micrometer:micrometer-core:1.8.0'
     implementation 'io.micrometer:micrometer-registry-cloudwatch:1.8.0'
     

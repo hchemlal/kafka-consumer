@@ -1,7 +1,9 @@
-package com.example.kafka;
+package com.example.kafka.config;
 
+import com.example.kafka.ActionEvent;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,8 +15,8 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.*;
+import org.springframework.kafka.support.LogIfLevelEnabled;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
-import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -149,6 +151,10 @@ public class KafkaConsumerConfig {
         // Core Kafka settings
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+
+        /*Starting with version 2.1.1, you can now set the client.id property for consumers created by the annotation
+        @KafkaListener Annotation. The clientIdPrefix is suffixed with -n, where n is an integer representing the container number when using concurrency */
+        props.put(ConsumerConfig.CLIENT_ID_CONFIG, "downstream-spire-reader");
         
         // Deserialization configuration
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, 
@@ -199,27 +205,62 @@ public class KafkaConsumerConfig {
      * Creates the Kafka listener container factory optimized for cloud deployment.
      */
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, ActionEvent> 
-            kafkaListenerContainerFactory(KafkaTemplate<String, ActionEvent> kafkaTemplate) {
+    public ConcurrentKafkaListenerContainerFactory<String, ActionEvent>
+            kafkaManualAckListenerContainerFactory(KafkaTemplate<String, ActionEvent> kafkaTemplate) {
         
-        ConcurrentKafkaListenerContainerFactory<String, ActionEvent> factory =
+        ConcurrentKafkaListenerContainerFactory<String, ActionEvent> containerFactory =
             new ConcurrentKafkaListenerContainerFactory<>();
         
         // Basic configuration
-        factory.setConsumerFactory(consumerFactory());
+        containerFactory.setConsumerFactory(consumerFactory());
         
         // Container-optimized concurrency
-        factory.setConcurrency(
+        containerFactory.setConcurrency(
             Integer.parseInt(environment.getProperty("KAFKA_CONSUMER_CONCURRENCY", "1"))
         );
         
         // Enable batch listening with cloud-optimized settings
-        factory.setBatchListener(true);
+        //@KafkaListener methods to receive the entire batch of consumer records received from the consumer poll
+        //Non-Blocking Retries are not supported with batch listeners.
+        containerFactory.setBatchListener(true);
         
         // Configure manual acknowledgment
-        ContainerProperties props = factory.getContainerProperties();
-        props.setAckMode(ContainerProperties.AckMode.MANUAL);
-        
+        ContainerProperties containerProps = containerFactory.getContainerProperties();
+
+        /*Because the listener container has its own mechanism for committing offsets,
+        it prefers the Kafka ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to be false.
+        Starting with version 2.3, it unconditionally sets it to false unless specifically set in the consumer factory
+        or the container’s consumer property overrides.
+         */
+
+        containerProps.setAckMode(ContainerProperties.AckMode.MANUAL);
+
+        /* When 'true' and 'INFO' logging is enabled each listener container writes a log message
+        summarizing its configuration properties */
+        containerProps.setLogContainerConfig(true);
+
+        /* By default, logging of topic offset commits is performed at the DEBUG logging level, we want to see it at
+        INFO level.
+         */
+        containerProps.setCommitLogLevel(LogIfLevelEnabled.Level.INFO);
+
+        /* Starting with version 2.2, a new container property called missingTopicsFatal has been added (default: false since 2.3.4).
+        This prevents the container from starting if any of the configured topics are not present on the broker.
+        It does not apply if the container is configured to listen to a topic pattern (regex).
+        Previously, the container threads looped within the consumer.poll() method waiting for the topic to appear
+        while logging many messages. Aside from the logs, there was no indication that there was a problem
+        */
+        containerProps.setMissingTopicsFatal(true);
+
+        containerProps.setMessageListener(new MessageListener<Integer, String>() {
+
+            /* Invoked with data from kafka.*/
+            @Override
+            public void onMessage(ConsumerRecord<Integer, String> data) {
+
+            }
+        });
+
         // DLT configuration
         DeadLetterPublishingRecoverer recoverer = 
             new DeadLetterPublishingRecoverer(kafkaTemplate,
@@ -235,8 +276,8 @@ public class KafkaConsumerConfig {
 //        );
 //
 //        factory.setCommonErrorHandler(errorHandler);
-        
-        return factory;
+
+        return containerFactory;
     }
 
     private boolean isSecurityEnabled() {

@@ -1,11 +1,12 @@
 package com.example.kafka;
 
+import org.apache.kafka.clients.consumer.*;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.DltHandler;
 import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,10 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
 import java.time.format.DateTimeParseException;
+import java.util.Properties;
+import java.util.Collections;
+
+import org.apache.kafka.common.serialization.StringDeserializer;
 
 /**
  * Main Kafka consumer component that processes incoming messages.
@@ -99,10 +104,23 @@ public class KafkaMessageConsumer {
     
     private final ApiService apiService;
     private final EmailService emailService;
+    private final Consumer<String, String> consumer;
 
-    public KafkaMessageConsumer(ApiService apiService, EmailService emailService) {
+    public KafkaMessageConsumer(ApiService apiService, EmailService emailService, String topic) {
         this.apiService = apiService;
         this.emailService = emailService;
+
+        Properties props = new Properties();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "your_group_id");
+
+        this.consumer = new KafkaConsumer<>(props);
+
+        // Registering the rebalance listener
+        KafkaRebalanceListener rebalanceListener = new KafkaRebalanceListener(consumer);
+        consumer.subscribe(Collections.singletonList(topic), rebalanceListener);
     }
 
     /**
@@ -119,11 +137,15 @@ public class KafkaMessageConsumer {
      * @param acknowledgment Manual acknowledgment handler
      */
     @KafkaListener(topics = "${kafka.topic.name}", 
-                  containerFactory = "kafkaListenerContainerFactory")
-    public void consume(List<ConsumerRecord<String, ActionEvent>> records, Acknowledgment acknowledgment) {
-        if (CollectionUtils.isEmpty(records)) {
+                  containerFactory = "kafkaManualAckListenerContainerFactory")
+    public void consume(ConsumerRecords<String, ActionEvent> records, Acknowledgment acknowledgment) {
+            //if I want to kafka record ts: @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long ts
+        if (records.isEmpty()) {
             return;
         }
+
+        log.info("Records in batch count: {}", records.count());
+
 
         // Process records one at a time
         for (ConsumerRecord<String, ActionEvent> record : records) {

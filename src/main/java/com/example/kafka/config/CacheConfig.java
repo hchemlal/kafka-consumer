@@ -1,4 +1,4 @@
-package com.example.kafka;
+package com.example.kafka.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;

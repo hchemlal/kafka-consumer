@@ -41,7 +41,7 @@ public class KafkaMessageConsumerTest {
         ConsumerRecord<String, ActionEvent> record = new ConsumerRecord<>("my-topic", 0, 0, "key", new ActionEvent());
 
         // Call the consume method with the mocked record and acknowledgment
-        kafkaMessageConsumer.consume(Collections.singletonList(record), acknowledgment);
+        kafkaMessageConsumer.consume(Collections.singletonList(record), acknowledgment, System.currentTimeMillis());
 
         // Verify that the acknowledgment is called once, indicating successful processing of the message
         verify(acknowledgment, times(1)).acknowledge();
